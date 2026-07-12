@@ -61,11 +61,11 @@ def create_app() -> FastAPI:
                 return {"error": "not found"}
 
             neighbors = store.query_neighbors(node_id, depth=depth)
-            nodes_ids = {node_id} | {n.id for n in neighbors}
+            nodes_ids = {node_id} | {n.id for n in neighbors[:500]}  # limit nodes
             ids_list = list(nodes_ids)
             placeholders = ",".join("?" for _ in ids_list)
             rows = store.conn.execute(
-                f"SELECT * FROM edges WHERE src IN ({placeholders}) AND dst IN ({placeholders})",
+                f"SELECT * FROM edges WHERE src IN ({placeholders}) AND dst IN ({placeholders}) LIMIT 1000",
                 ids_list + ids_list,
             ).fetchall()
 
@@ -83,12 +83,26 @@ def create_app() -> FastAPI:
                         "label": n.label,
                         "type": n.type,
                     }
-                    for n in neighbors
+                    for n in neighbors[:500]
                 ],
                 "links": [
                     {"source": r["src"], "target": r["dst"], "type": r["type"]} for r in rows
                 ],
             }
+
+    @app.get("/api/projects", response_class=JSONResponse)
+    def api_projects():
+        config = get_config()
+        with GraphStore(config.db_path) as store:
+            projects = store.list_projects()
+            return [
+                {
+                    "id": p.id,
+                    "root": str(p.root),
+                    "name": p.name,
+                }
+                for p in projects
+            ]
 
     @app.get("/api/stats", response_class=JSONResponse)
     def api_stats():

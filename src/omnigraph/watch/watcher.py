@@ -93,7 +93,7 @@ class DebouncedHandler(FileSystemEventHandler):
                 kw.index(file_id, str(path), title, content.text)
 
                 semantic.delete(file_id)
-                chunks = embedder.chunk_text(content.text)
+                chunks = content.chunks if content.chunks else embedder.chunk_text(content.text)
                 if chunks:
                     embeddings = embedder.encode(chunks)
                     for i, emb in enumerate(embeddings):

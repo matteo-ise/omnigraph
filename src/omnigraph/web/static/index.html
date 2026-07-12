@@ -54,12 +54,21 @@ function renderGraph(data) {
   svg.selectAll("*").remove();
   if (!data.nodes || data.nodes.length === 0) return;
 
-  linkSel = svg.append("g").attr("class", "links")
+  const g = svg.append("g");
+
+  svg.call(d3.zoom()
+      .extent([[0, 0], [width, height]])
+      .scaleExtent([0.1, 8])
+      .on("zoom", (e) => {
+          g.attr("transform", e.transform);
+      }));
+
+  linkSel = g.append("g").attr("class", "links")
     .selectAll("line").data(data.links).join("line")
     .attr("class", "link")
     .attr("stroke-width", 1);
 
-  const nodes = svg.append("g").attr("class", "nodes")
+  const nodes = g.append("g").attr("class", "nodes")
     .selectAll("g").data(data.nodes).join("g")
     .attr("class", "node")
     .style("cursor", "pointer")
