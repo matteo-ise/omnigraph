@@ -1,10 +1,13 @@
 from pathlib import Path
+
 from omnigraph.extract.base import ExtractedContent, Extractor
+
 
 class IpynbExtractor(Extractor):
     def extract(self, path: Path) -> ExtractedContent | None:
         try:
             import nbformat
+
             nb = nbformat.read(path, as_version=4)
             text = []
             for cell in nb.cells:
@@ -13,7 +16,7 @@ class IpynbExtractor(Extractor):
             return ExtractedContent(
                 text="\n\n".join(text),
                 metadata={"type": "jupyter_notebook", "title": path.name},
-                chunks=[]
+                chunks=[],
             )
         except Exception:
             return None

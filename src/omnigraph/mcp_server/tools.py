@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel
 
 from omnigraph.config import get_config
 from omnigraph.crawler.walker import walk
@@ -11,15 +14,13 @@ from omnigraph.search.hybrid import hybrid_search
 from omnigraph.search.keyword import KeywordSearch
 
 
-from pydantic import BaseModel
-from typing import Any
-
 class SearchResultModel(BaseModel):
     file_id: str
     path: str
     score: float
     snippet: str
     provider: str
+
 
 class FileDetailModel(BaseModel):
     node_id: str
@@ -30,6 +31,7 @@ class FileDetailModel(BaseModel):
     text: str
     metadata: dict[str, Any]
 
+
 class ProjectModel(BaseModel):
     id: str
     root: str
@@ -37,28 +39,34 @@ class ProjectModel(BaseModel):
     total_nodes_in_db: int
     total_edges_in_db: int
 
+
 class GraphNodeModel(BaseModel):
     id: str
     label: str
     type: str
     properties: dict[str, Any]
 
+
 class GraphEdgeModel(BaseModel):
     src: str
     dst: str
     type: str
+
 
 class GraphQueryModel(BaseModel):
     center: GraphNodeModel
     nodes: list[GraphNodeModel]
     edges: list[GraphEdgeModel]
 
+
 class RelatedFileModel(BaseModel):
     file_id: str
     path: str
 
+
 class ErrorModel(BaseModel):
     error: str
+
 
 def search(query: str, k: int = 10, mode: str = "hybrid") -> list[SearchResultModel] | ErrorModel:
     try:
@@ -77,6 +85,7 @@ def search(query: str, k: int = 10, mode: str = "hybrid") -> list[SearchResultMo
             ]
 
         from omnigraph.integration import cbm_search, is_cbm_available, merge_results
+
         if is_cbm_available():
             cbm_results = cbm_search(query, k)
             merged = merge_results([r.model_dump() for r in omnigraph_results], cbm_results)
@@ -150,8 +159,13 @@ def graph_query(node_id: str, depth: int = 2) -> GraphQueryModel | ErrorModel:
             edges = [GraphEdgeModel(src=r["src"], dst=r["dst"], type=r["type"]) for r in rows]
 
             return GraphQueryModel(
-                center=GraphNodeModel(id=node.id, label=node.label, type=node.type, properties=node.properties),
-                nodes=[GraphNodeModel(id=n.id, label=n.label, type=n.type, properties=n.properties) for n in neighbors],
+                center=GraphNodeModel(
+                    id=node.id, label=node.label, type=node.type, properties=node.properties
+                ),
+                nodes=[
+                    GraphNodeModel(id=n.id, label=n.label, type=n.type, properties=n.properties)
+                    for n in neighbors
+                ],
                 edges=edges,
             )
     except Exception as e:
@@ -170,7 +184,9 @@ def find_related(path: str, k: int = 5) -> list[RelatedFileModel] | ErrorModel:
             related_files = []
             for n in neighbors:
                 if n.type == "file" and n.id != file_rec.node_id:
-                    row = store.conn.execute("SELECT path FROM files WHERE node_id=?", (n.id,)).fetchone()
+                    row = store.conn.execute(
+                        "SELECT path FROM files WHERE node_id=?", (n.id,)
+                    ).fetchone()
                     if row:
                         related_files.append(RelatedFileModel(file_id=n.id, path=row["path"]))
 
@@ -184,6 +200,7 @@ class ReindexModel(BaseModel):
     total_files_processed: int
     database_stats: dict[str, int]
 
+
 def reindex(root: str | None = None) -> ReindexModel | ErrorModel:
     try:
         config = get_config()
@@ -196,6 +213,7 @@ def reindex(root: str | None = None) -> ReindexModel | ErrorModel:
 
             from omnigraph.embed.engine import Embedder
             from omnigraph.search.semantic import SemanticSearch
+
             embedder = Embedder()
             semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
 
@@ -209,9 +227,11 @@ def reindex(root: str | None = None) -> ReindexModel | ErrorModel:
                         title = content.metadata.get("title", entry.path.name)
                         file_id = node_id
                         kw.index(file_id, str(entry.path), title, content.text)
-                        
+
                         semantic.delete(file_id)
-                        chunks = content.chunks if content.chunks else embedder.chunk_text(content.text)
+                        chunks = (
+                            content.chunks if content.chunks else embedder.chunk_text(content.text)
+                        )
                         if chunks:
                             embeddings = embedder.encode(chunks)
                             for i, emb in enumerate(embeddings):
@@ -220,11 +240,28 @@ def reindex(root: str | None = None) -> ReindexModel | ErrorModel:
                             for emb in embeddings:
                                 results = semantic.search(emb, k=3)
                                 for res in results:
-                                    other_id = res.file_id.split(":")[0] + ":" + res.file_id.split(":")[1]
+                                    other_id = (
+                                        res.file_id.split(":")[0] + ":" + res.file_id.split(":")[1]
+                                    )
                                     if other_id != file_id and res.score > 0.8:
                                         from omnigraph.graph.models import Edge
-                                        store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": res.score}))
-                                        store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": res.score}))
+
+                                        store.add_edge(
+                                            Edge(
+                                                src=file_id,
+                                                dst=other_id,
+                                                type="SIMILAR_TO",
+                                                properties={"score": res.score},
+                                            )
+                                        )
+                                        store.add_edge(
+                                            Edge(
+                                                src=other_id,
+                                                dst=file_id,
+                                                type="SIMILAR_TO",
+                                                properties={"score": res.score},
+                                            )
+                                        )
 
                     total_indexed += 1
 

@@ -8,11 +8,11 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from omnigraph.crawler.walker import FileEntry
+from omnigraph.embed.engine import Embedder
 from omnigraph.extract import extract_file
 from omnigraph.graph.builder import GraphBuilder
 from omnigraph.graph.store import GraphStore
 from omnigraph.search.keyword import KeywordSearch
-from omnigraph.embed.engine import Embedder
 from omnigraph.search.semantic import SemanticSearch
 
 
@@ -87,7 +87,7 @@ class DebouncedHandler(FileSystemEventHandler):
                 kw = KeywordSearch(self.store.conn)
                 embedder = Embedder()
                 semantic = SemanticSearch(self.store.conn, dimension=embedder.dimension)
-                
+
                 title = content.metadata.get("title", path.name)
                 file_id = node_id
                 kw.index(file_id, str(path), title, content.text)
@@ -105,8 +105,23 @@ class DebouncedHandler(FileSystemEventHandler):
                             other_id = r.file_id.split(":")[0] + ":" + r.file_id.split(":")[1]
                             if other_id != file_id and r.score > 0.8:
                                 from omnigraph.graph.models import Edge
-                                self.store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": r.score}))
-                                self.store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": r.score}))
+
+                                self.store.add_edge(
+                                    Edge(
+                                        src=file_id,
+                                        dst=other_id,
+                                        type="SIMILAR_TO",
+                                        properties={"score": r.score},
+                                    )
+                                )
+                                self.store.add_edge(
+                                    Edge(
+                                        src=other_id,
+                                        dst=file_id,
+                                        type="SIMILAR_TO",
+                                        properties={"score": r.score},
+                                    )
+                                )
 
             self.store.commit()
         except Exception:
@@ -118,11 +133,11 @@ class DebouncedHandler(FileSystemEventHandler):
         kw = KeywordSearch(self.store.conn)
         file_id = f"file:{path.name}"
         kw.delete(file_id)
-        
+
         embedder = Embedder()
         semantic = SemanticSearch(self.store.conn, dimension=embedder.dimension)
         semantic.delete(file_id)
-        
+
         self.store.commit()
 
 
@@ -150,6 +165,7 @@ class FileWatcher:
 
     def run(self):
         import signal
+
         self._running = True
 
         def handle_sigint(sig, frame):

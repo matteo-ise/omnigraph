@@ -25,6 +25,7 @@ class KeywordSearch:
 
     def _get_rowid(self, file_id: str) -> int:
         import hashlib
+
         return int(hashlib.md5(file_id.encode()).hexdigest()[:8], 16) & 0x7FFFFFFF
 
     def index(self, file_id: str, path: str, title: str, text: str):

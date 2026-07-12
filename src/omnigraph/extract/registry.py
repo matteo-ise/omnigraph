@@ -45,19 +45,24 @@ def _init_registry():
         _REGISTRY[ext] = media_ext
 
     from omnigraph.extract.pptx import PptxExtractor
+
     _REGISTRY[".pptx"] = PptxExtractor()
     _REGISTRY[".ppt"] = PptxExtractor()
 
     from omnigraph.extract.html import HtmlExtractor
+
     html_ext = HtmlExtractor()
     for ext in [".html", ".htm", ".xhtml"]:
         _REGISTRY[ext] = html_ext
 
     from omnigraph.extract.epub import EpubExtractor
+
     _REGISTRY[".epub"] = EpubExtractor()
 
     from omnigraph.extract.ipynb import IpynbExtractor
+
     _REGISTRY[".ipynb"] = IpynbExtractor()
+
 
 def get_extractor(path: Path) -> Extractor | None:
     _init_registry()

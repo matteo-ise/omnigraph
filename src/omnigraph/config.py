@@ -76,7 +76,7 @@ def get_config() -> Config:
             try:
                 with open(config_path, "rb") as f:
                     toml_data = tomllib.load(f)
-                
+
                 if "roots" in toml_data:
                     _config.roots = [Path(r).expanduser() for r in toml_data["roots"]]
                 if "db_path" in toml_data:
@@ -91,10 +91,12 @@ def get_config() -> Config:
                     _config.code_provider = toml_data["code_provider"]
             except Exception as e:
                 print(f"Failed to load config.toml: {e}")
-                
+
         if "OMNIGRAPH_ROOTS" in os.environ:
-            _config.roots = [Path(r.strip()).expanduser() for r in os.environ["OMNIGRAPH_ROOTS"].split(",")]
+            _config.roots = [
+                Path(r.strip()).expanduser() for r in os.environ["OMNIGRAPH_ROOTS"].split(",")
+            ]
         if "OMNIGRAPH_DB_PATH" in os.environ:
             _config.db_path = Path(os.environ["OMNIGRAPH_DB_PATH"]).expanduser()
-            
+
     return _config

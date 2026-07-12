@@ -37,7 +37,7 @@ class GraphBuilder:
         if content:
             self._extract_tags(node_id, content)
             self._extract_topics(node_id, content)
-            
+
         return node_id
 
     def _ensure_project(self, root: Path) -> Project:

@@ -73,7 +73,7 @@ def hybrid_search(
     for r in sem_results:
         # r.file_id is like "file:hash:chunk_i"
         node_id = r.file_id.rsplit(":", 1)[0]
-        
+
         # Look up path from node_id
         row = conn.execute("SELECT path FROM files WHERE node_id=?", (node_id,)).fetchone()
         if row:
@@ -82,7 +82,7 @@ def hybrid_search(
             if key not in paths:
                 paths[key] = key
             if key not in snippets:
-                snippets[key] = "" # semantic doesn't have snippets currently
+                snippets[key] = ""  # semantic doesn't have snippets currently
             node_ids[key] = node_id
 
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:k]

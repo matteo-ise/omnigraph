@@ -65,7 +65,8 @@ def create_app() -> FastAPI:
             ids_list = list(nodes_ids)
             placeholders = ",".join("?" for _ in ids_list)
             rows = store.conn.execute(
-                f"SELECT * FROM edges WHERE src IN ({placeholders}) AND dst IN ({placeholders}) LIMIT 1000",
+                "SELECT * FROM edges WHERE src IN ("
+                f"{placeholders}) AND dst IN ({placeholders}) LIMIT 1000",
                 ids_list + ids_list,
             ).fetchall()
 

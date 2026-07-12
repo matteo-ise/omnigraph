@@ -68,11 +68,13 @@ def crawl(
         kw = KeywordSearch(store.conn)
         from omnigraph.embed.engine import Embedder
         from omnigraph.search.semantic import SemanticSearch
+
         embedder = Embedder()
         semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
 
         total = 0
         from rich.progress import Progress
+
         with Progress() as progress:
             task = progress.add_task("[cyan]Crawling...", total=None)
             for r in roots:
@@ -87,24 +89,43 @@ def crawl(
                         title = content.metadata.get("title", entry.path.name)
                         file_id = node_id
                         kw.index(file_id, str(entry.path), title, content.text)
-                        
+
                         semantic.delete(file_id)
-                        chunks = content.chunks if content.chunks else embedder.chunk_text(content.text)
+                        chunks = (
+                            content.chunks if content.chunks else embedder.chunk_text(content.text)
+                        )
                         if chunks:
                             embeddings = embedder.encode(chunks)
                             for i, emb in enumerate(embeddings):
                                 semantic.index(f"{file_id}:chunk{i}", emb)
-                            
+
                             # Add SIMILAR_TO edges
                             for emb in embeddings:
                                 results = semantic.search(emb, k=3)
                                 for r in results:
-                                    other_id = r.file_id.split(":")[0] + ":" + r.file_id.split(":")[1] # e.g. file:hash
+                                    other_id = (
+                                        r.file_id.split(":")[0] + ":" + r.file_id.split(":")[1]
+                                    )  # e.g. file:hash
                                     if other_id != file_id and r.score > 0.8:
                                         from omnigraph.graph.models import Edge
-                                        store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": r.score}))
-                                        store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": r.score}))
-                    
+
+                                        store.add_edge(
+                                            Edge(
+                                                src=file_id,
+                                                dst=other_id,
+                                                type="SIMILAR_TO",
+                                                properties={"score": r.score},
+                                            )
+                                        )
+                                        store.add_edge(
+                                            Edge(
+                                                src=other_id,
+                                                dst=file_id,
+                                                type="SIMILAR_TO",
+                                                properties={"score": r.score},
+                                            )
+                                        )
+
                     total += 1
                     progress.update(task, advance=1)
                     if total % 1000 == 0:
@@ -248,6 +269,7 @@ def reindex(
         kw = KeywordSearch(store.conn)
         from omnigraph.embed.engine import Embedder
         from omnigraph.search.semantic import SemanticSearch
+
         embedder = Embedder()
         semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
 
@@ -271,11 +293,28 @@ def reindex(
                         for emb in embeddings:
                             results = semantic.search(emb, k=3)
                             for res in results:
-                                other_id = res.file_id.split(":")[0] + ":" + res.file_id.split(":")[1]
+                                other_id = (
+                                    res.file_id.split(":")[0] + ":" + res.file_id.split(":")[1]
+                                )
                                 if other_id != file_id and res.score > 0.8:
                                     from omnigraph.graph.models import Edge
-                                    store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": res.score}))
-                                    store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": res.score}))
+
+                                    store.add_edge(
+                                        Edge(
+                                            src=file_id,
+                                            dst=other_id,
+                                            type="SIMILAR_TO",
+                                            properties={"score": res.score},
+                                        )
+                                    )
+                                    store.add_edge(
+                                        Edge(
+                                            src=other_id,
+                                            dst=file_id,
+                                            type="SIMILAR_TO",
+                                            properties={"score": res.score},
+                                        )
+                                    )
 
                 total += 1
                 if total % 1000 == 0:

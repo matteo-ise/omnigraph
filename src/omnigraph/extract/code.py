@@ -58,14 +58,15 @@ class CodeExtractor(Extractor):
         chunks = []
         if language == "python":
             chunks = self._ast_chunk_python(text)
-        
+
         if not chunks:
             chunks = self.chunk_text(text)
-            
+
         return ExtractedContent(text=text, metadata=metadata, chunks=chunks)
 
     def _ast_chunk_python(self, text: str) -> list[str]:
         import ast
+
         try:
             tree = ast.parse(text)
             chunks = []
