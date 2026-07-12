@@ -49,3 +49,8 @@
 - **Status:** completed
 - **Commit:** 3f41c2b
 - **Notes:** README, LICENSE, CONTRIBUTING, ROADMAP, CI, benchmark script
+
+## Phase 10: Brand Alignment
+- **Status:** completed
+- **Commit:** de77d40
+- **Notes:** README auf Deutsch, matteo-brand Badges, Privacy-Sektion, Vergleichstabelle, Cross-Promotion-Footer, ruff clean
