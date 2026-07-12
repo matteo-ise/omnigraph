@@ -159,10 +159,10 @@ def reindex(root: str | None = None) -> dict:
             entries = walk(r)
             for entry in entries:
                 content = extract_file(entry.path)
-                builder.build_from_file(entry, content, r)
+                node_id = builder.build_from_file(entry, content, r)
                 if content:
                     title = content.metadata.get("title", entry.path.name)
-                    file_id = f"file:{entry.path.name}"
+                    file_id = node_id
                     kw.index(file_id, str(entry.path), title, content.text)
                     
                     semantic.delete(file_id)
@@ -171,6 +171,15 @@ def reindex(root: str | None = None) -> dict:
                         embeddings = embedder.encode(chunks)
                         for i, emb in enumerate(embeddings):
                             semantic.index(f"{file_id}:chunk{i}", emb)
+
+                        for emb in embeddings:
+                            results = semantic.search(emb, k=3)
+                            for res in results:
+                                other_id = res.file_id.split(":")[0] + ":" + res.file_id.split(":")[1]
+                                if other_id != file_id and res.score > 0.8:
+                                    from omnigraph.graph.models import Edge
+                                    store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": res.score}))
+                                    store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": res.score}))
 
                 total_indexed += 1
 

@@ -67,4 +67,34 @@ def get_config() -> Config:
     global _config
     if _config is None:
         _config = Config()
+        import os
+        import tomllib
+        from pathlib import Path
+
+        config_path = Path.home() / ".omnigraph" / "config.toml"
+        if config_path.exists():
+            try:
+                with open(config_path, "rb") as f:
+                    toml_data = tomllib.load(f)
+                
+                if "roots" in toml_data:
+                    _config.roots = [Path(r).expanduser() for r in toml_data["roots"]]
+                if "db_path" in toml_data:
+                    _config.db_path = Path(toml_data["db_path"]).expanduser()
+                if "ignore_patterns" in toml_data:
+                    _config.ignore_patterns = toml_data["ignore_patterns"]
+                if "max_depth" in toml_data:
+                    _config.max_depth = int(toml_data["max_depth"])
+                if "embedding_model" in toml_data:
+                    _config.embedding_model = toml_data["embedding_model"]
+                if "code_provider" in toml_data:
+                    _config.code_provider = toml_data["code_provider"]
+            except Exception as e:
+                print(f"Failed to load config.toml: {e}")
+                
+        if "OMNIGRAPH_ROOTS" in os.environ:
+            _config.roots = [Path(r.strip()).expanduser() for r in os.environ["OMNIGRAPH_ROOTS"].split(",")]
+        if "OMNIGRAPH_DB_PATH" in os.environ:
+            _config.db_path = Path(os.environ["OMNIGRAPH_DB_PATH"]).expanduser()
+            
     return _config

@@ -81,7 +81,7 @@ class DebouncedHandler(FileSystemEventHandler):
             content = extract_file(path)
             # Find which root it belongs to
             root_path = next((r for r in self.roots if path.is_relative_to(r)), self.roots[0])
-            self.builder.build_from_file(entry, content, root_path)
+            node_id = self.builder.build_from_file(entry, content, root_path)
 
             if content:
                 kw = KeywordSearch(self.store.conn)
@@ -89,7 +89,7 @@ class DebouncedHandler(FileSystemEventHandler):
                 semantic = SemanticSearch(self.store.conn, dimension=embedder.dimension)
                 
                 title = content.metadata.get("title", path.name)
-                file_id = f"file:{path.name}"
+                file_id = node_id
                 kw.index(file_id, str(path), title, content.text)
 
                 semantic.delete(file_id)
@@ -98,6 +98,15 @@ class DebouncedHandler(FileSystemEventHandler):
                     embeddings = embedder.encode(chunks)
                     for i, emb in enumerate(embeddings):
                         semantic.index(f"{file_id}:chunk{i}", emb)
+
+                    for emb in embeddings:
+                        results = semantic.search(emb, k=3)
+                        for r in results:
+                            other_id = r.file_id.split(":")[0] + ":" + r.file_id.split(":")[1]
+                            if other_id != file_id and r.score > 0.8:
+                                from omnigraph.graph.models import Edge
+                                self.store.add_edge(Edge(src=file_id, dst=other_id, type="SIMILAR_TO", properties={"score": r.score}))
+                                self.store.add_edge(Edge(src=other_id, dst=file_id, type="SIMILAR_TO", properties={"score": r.score}))
 
             self.store.commit()
         except Exception:
