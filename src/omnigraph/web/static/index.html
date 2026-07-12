@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>omnigraph</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #c9d1d9; padding: 20px; }
+  #header { display: flex; gap: 12px; margin-bottom: 20px; }
+  #header input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #30363d; background: #161b22; color: #c9d1d9; font-size: 14px; }
+  #header button { padding: 10px 20px; border-radius: 8px; border: none; background: #238636; color: white; font-weight: 600; cursor: pointer; }
+  #header button:hover { background: #2ea043; }
+  .type-file { fill: #58a6ff; }
+  .type-project { fill: #3fb950; }
+  .type-folder { fill: #d29922; }
+  .type-tag { fill: #f85149; }
+  .type-topic { fill: #bc8cff; }
+  .type-other { fill: #8b949e; }
+  .link { stroke: #30363d; stroke-opacity: 0.6; }
+  .node-label { font-size: 11px; fill: #8b949e; pointer-events: none; }
+  #stats { position: fixed; bottom: 20px; left: 20px; font-size: 12px; color: #8b949e; }
+  #results { max-width: 600px; margin-top: 20px; }
+  .result-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; background: #161b22; border: 1px solid #21262d; cursor: pointer; }
+  .result-item:hover { border-color: #30363d; }
+  .result-path { color: #58a6ff; font-size: 13px; font-weight: 600; }
+  .result-snippet { color: #8b949e; font-size: 12px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <input type="text" id="query" placeholder="Search your knowledge graph..." onkeydown="if(event.key==='Enter')doSearch()">
+  <button onclick="doSearch()">Search</button>
+</div>
+<svg id="graph" width="100%" height="600"></svg>
+<div id="results"></div>
+<div id="stats">Loading stats...</div>
+
+<script>
+const svg = d3.select("#graph");
+const width = window.innerWidth - 40;
+const height = 600;
+svg.attr("width", width);
+
+const simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(d => d.id).distance(80))
+    .force("charge", d3.forceManyBody().strength(-200))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+let linkSel, nodeSel, labelSel;
+
+function renderGraph(data) {
+  svg.selectAll("*").remove();
+  if (!data.nodes || data.nodes.length === 0) return;
+
+  linkSel = svg.append("g").attr("class", "links")
+    .selectAll("line").data(data.links).join("line")
+    .attr("class", "link")
+    .attr("stroke-width", 1);
+
+  const nodes = svg.append("g").attr("class", "nodes")
+    .selectAll("g").data(data.nodes).join("g")
+    .attr("class", "node")
+    .style("cursor", "pointer")
+    .call(d3.drag()
+      .on("start", (e,d) => {
+        if (!e.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x; d.fy = d.y;
+      })
+      .on("drag", (e,d) => { d.fx = e.x; d.fy = e.y; })
+      .on("end", (e,d) => { d.fx = null; d.fy = null; })
+    )
+    .on("click", (e,d) => loadGraph(d.id));
+
+  nodes.append("circle")
+    .attr("r", 10)
+    .attr("class", d => "type-" + (d.type || "other"));
+
+  labelSel = nodes.append("text")
+    .attr("class", "node-label")
+    .attr("dx", 14)
+    .attr("dy", 4)
+    .text(d => d.label.length > 30 ? d.label.slice(0,30)+"..." : d.label);
+
+  simulation.nodes(data.nodes);
+  simulation.force("link").links(data.links);
+  simulation.on("tick", () => {
+    linkSel.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+           .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+    nodes.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+}
+
+async function doSearch() {
+  const q = document.getElementById("query").value;
+  if (!q) return;
+  const resp = await fetch("/api/search?q=" + encodeURIComponent(q) + "&k=20");
+  const results = await resp.json();
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "";
+  results.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "result-item";
+    div.innerHTML = `<div class="result-path">${r.path}</div><div class="result-snippet">${(r.snippet || '').replace(/<[^>]+>/g,'').slice(0,100)}</div>`;
+    div.onclick = () => {
+      if (r.file_id) loadGraph(r.file_id);
+    };
+    resultsDiv.appendChild(div);
+  });
+}
+
+async function loadGraph(nodeId) {
+  if (!nodeId) {
+    const stats = await (await fetch("/api/stats")).json();
+    document.getElementById("stats").innerHTML = `Nodes: ${stats.nodes} | Edges: ${stats.edges} | Files: ${stats.files}`;
+    return;
+  }
+  const resp = await fetch("/api/graph/" + encodeURIComponent(nodeId) + "?depth=2");
+  const data = await resp.json();
+  if (data && data.nodes) renderGraph(data);
+}
+
+(async () => {
+  await loadGraph();
+})();
+</script>
+</body>
+</html>
