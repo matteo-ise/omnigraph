@@ -1,3 +1,5 @@
+<<<../matteo-brand/PROMPT_INJECTION.md
+
 # AGENTS.md — omnigraph (opencode-Kontext)
 
 ## Projekt

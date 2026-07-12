@@ -15,9 +15,9 @@
 
 ## Was du tun musst
 
-1. **Lies `../matteoise-ui-kit/BRAND_SYSTEM.md` neu** — Sektionen §4.1 (Typografie), §4.2 (Farben) wurden komplett überarbeitet.
-2. **Lies `../matteoise-ui-kit/README.md` neu** + `../matteoise-ui-kit/tailwind.config.ts` + `../matteoise-ui-kit/src/styles/globals.css` — Palette und Fonts wurden geändert.
-3. **Falls du das UI-Kit noch nicht eingebunden hast** — führe Aufgabe A aus v2 aus (`git submodule add ../matteoise-ui-kit src/ui-kit`).
+1. **Lies `../matteo-brand/BRAND_SYSTEM.md` neu** — Sektionen §4.1 (Typografie), §4.2 (Farben) wurden komplett überarbeitet.
+2. **Lies `../matteo-brand/README.md` neu** + `../matteo-brand/tailwind.config.ts` + `../matteo-brand/src/styles/globals.css` — Palette und Fonts wurden geändert.
+3. **Falls du das UI-Kit noch nicht eingebunden hast** — führe Aufgabe A aus v2 aus (`git submodule add ../matteo-brand src/ui-kit`).
 4. **Falls du das UI-Kit schon eingebunden hast** — update das Submodule: `git submodule update --remote --merge`
 
 ## Deine Aufgaben
@@ -58,12 +58,12 @@ Trage unter `## Brand-Alignment-Audit v3` ein:
 ## Kritische Regeln
 
 - **Breche NIE Funktionalität für Brand-Alignment.** Self-Healing, dann `blocked: brand-alignment-v3-conflict`.
-- **Keine neuen externen Abhängigkeiten** außer matteoise-ui-kit und dessen Peer-Deps.
+- **Keine neuen externen Abhängigkeiten** außer matteo-brand und dessen Peer-Deps.
 - **Granola-Grün `#19C332` ist die Accent-Farbe** — nicht Apple Blue, nicht eine eigene Wahl.
 - **Serif ist Pflicht für Content** — Body-Text in Sans-Serif ist ein Brand-Verstoß.
 - **Pure `#000000` ist verboten** — nutze `#14130F` (bg-bg-base).
 - **Pure `#FFFFFF` ist verboten** — nutze `#F5F2E8` (text-text-primary).
-- **matteoise-ui-kit ist privat** — nicht in öffentlichen Commits exponieren.
+- **matteo-brand ist privat** — nicht in öffentlichen Commits exponieren.
 
 ## Skill-Hinweise
 
@@ -76,9 +76,8 @@ Trage unter `## Brand-Alignment-Audit v3` ein:
 ## Repo-Übersicht (für Cross-Promotion-Footer)
 
 Alle Matteo-Apps:
-- **voicemeet** — `https://github.com/matteo-ise/voicemeet` — Lokale Meeting-Notizen mit KI
+- **open-loom** — `https://github.com/matteo-ise/open-loom` — Video aufnehmen + Meetings transkribieren
+- **open-lingo** — `https://github.com/matteo-ise/open-lingo` — Lokales DeepL + Grammarly
 - **omnigraph** — `https://github.com/matteo-ise/omnigraph` — Knowledge Graph über deinen Mac
-- **loomforge** — `https://github.com/matteo-ise/loomforge` — Open-Source-Loom-Alternative
-- **omnilingo** — `https://github.com/matteo-ise/omnilingo` — Lokales DeepL + Grammarly
 
-Los. Lies `../matteoise-ui-kit/BRAND_SYSTEM.md` neu, update das UI-Kit-Submodule falls nötig, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
+Los. Lies `../matteo-brand/PROMPT_INJECTION.md` + `../matteo-brand/BRAND_SYSTEM.md`, update das UI-Kit-Submodule falls nötig, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
