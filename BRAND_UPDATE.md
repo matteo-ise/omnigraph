@@ -15,7 +15,7 @@
 
 ## Was du tun musst
 
-1. **Lies `../BRAND_SYSTEM.md` neu** — Sektionen §4.1 (Typografie), §4.2 (Farben) wurden komplett überarbeitet.
+1. **Lies `../matteoise-ui-kit/BRAND_SYSTEM.md` neu** — Sektionen §4.1 (Typografie), §4.2 (Farben) wurden komplett überarbeitet.
 2. **Lies `../matteoise-ui-kit/README.md` neu** + `../matteoise-ui-kit/tailwind.config.ts` + `../matteoise-ui-kit/src/styles/globals.css` — Palette und Fonts wurden geändert.
 3. **Falls du das UI-Kit noch nicht eingebunden hast** — führe Aufgabe A aus v2 aus (`git submodule add ../matteoise-ui-kit src/ui-kit`).
 4. **Falls du das UI-Kit schon eingebunden hast** — update das Submodule: `git submodule update --remote --merge`
@@ -81,4 +81,4 @@ Alle Matteo-Apps:
 - **loomforge** — `https://github.com/matteo-ise/loomforge` — Open-Source-Loom-Alternative
 - **omnilingo** — `https://github.com/matteo-ise/omnilingo` — Lokales DeepL + Grammarly
 
-Los. Lies `../BRAND_SYSTEM.md` neu, update das UI-Kit-Submodule falls nötig, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
+Los. Lies `../matteoise-ui-kit/BRAND_SYSTEM.md` neu, update das UI-Kit-Submodule falls nötig, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
