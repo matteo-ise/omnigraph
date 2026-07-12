@@ -56,6 +56,7 @@ def hybrid_search(
     scores: dict[str, float] = {}
     paths: dict[str, str] = {}
     snippets: dict[str, str] = {}
+    node_ids: dict[str, str] = {}
 
     max_kw = max((r.score for r in kw_results), default=1.0) or 1.0
     for r in kw_results:
@@ -63,19 +64,32 @@ def hybrid_search(
         scores[key] = scores.get(key, 0) + keyword_weight * (r.score / max_kw)
         paths[key] = r.path
         snippets[key] = r.snippet
+        # Look up node_id
+        row = conn.execute("SELECT node_id FROM files WHERE path=?", (r.path,)).fetchone()
+        if row:
+            node_ids[key] = row["node_id"]
 
     max_sem = max((r.score for r in sem_results), default=1.0) or 1.0
     for r in sem_results:
-        key = r.file_id
-        scores[key] = scores.get(key, 0) + semantic_weight * (r.score / max_sem)
-        if key not in paths:
-            paths[key] = key
+        # r.file_id is like "file:hash:chunk_i"
+        node_id = r.file_id.rsplit(":", 1)[0]
+        
+        # Look up path from node_id
+        row = conn.execute("SELECT path FROM files WHERE node_id=?", (node_id,)).fetchone()
+        if row:
+            key = row["path"]
+            scores[key] = scores.get(key, 0) + semantic_weight * (r.score / max_sem)
+            if key not in paths:
+                paths[key] = key
+            if key not in snippets:
+                snippets[key] = "" # semantic doesn't have snippets currently
+            node_ids[key] = node_id
 
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:k]
     return [
         HybridResult(
-            file_id=key,
-            path=paths.get(key, key),
+            file_id=node_ids.get(key, ""),
+            path=key,
             score=score,
             snippet=snippets.get(key, ""),
         )

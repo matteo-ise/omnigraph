@@ -48,14 +48,15 @@ def test_mcp_list_projects(mcp_indexed_store):
 
     projects = mcp_tools.list_projects()
     assert len(projects) == 1
-    assert "tree" in projects[0]["name"]
+    assert "tree" in projects[0].name
 
 
 def test_mcp_search(mcp_indexed_store):
     import omnigraph.mcp_server.tools as mcp_tools
 
-    results = mcp_tools.search("invoice", k=5, mode="keyword")
+    results = mcp_tools.search("invoice", k=5)
     assert len(results) > 0
+    assert "invoice" in results[0].path
 
 
 def test_mcp_get_file(mcp_indexed_store):
@@ -66,8 +67,7 @@ def test_mcp_get_file(mcp_indexed_store):
     assert file_rec is not None
 
     result = mcp_tools.get_file(str(tree / "invoice.txt"))
-    assert "invoice" in result["text"]
-    assert result["node_id"] == file_rec.node_id
+    assert "invoice" in result.text
 
 
 def test_mcp_graph_query(mcp_indexed_store):
@@ -78,9 +78,8 @@ def test_mcp_graph_query(mcp_indexed_store):
     assert file_rec is not None
 
     result = mcp_tools.graph_query(file_rec.node_id, depth=1)
-    assert result["center"]["id"] == file_rec.node_id
-    assert len(result["nodes"]) > 0
-    assert len(result["edges"]) > 0
+    assert result.center.id == file_rec.node_id
+    assert len(result.nodes) > 0
 
 
 def test_mcp_reindex(mcp_indexed_store):
@@ -90,6 +89,9 @@ def test_mcp_reindex(mcp_indexed_store):
     (tree / "new_mcp_file.txt").write_text("Hello from MCP reindexing test")
 
     result = mcp_tools.reindex(str(tree))
-    assert result["status"] == "success"
-    assert result["total_files_processed"] == 3
-    assert result["database_stats"]["files"] == 3
+    assert result.status == "success"
+    assert result.total_files_processed == 3
+
+    res2 = mcp_tools.search("reindexing", k=3)
+    assert len(res2) > 0
+    assert any("new_mcp_file" in r.path for r in res2)

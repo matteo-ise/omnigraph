@@ -2,13 +2,17 @@
 
 > Local knowledge graph across all your drives — auto-indexing, hybrid search, MCP-integrated. Everything findable, nothing leaves your machine.
 
-[![CI](https://github.com/YOUR/omnigraph/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR/omnigraph/actions/workflows/ci.yml)
+**Runs 100% locally and offline.**
+
+[![CI](https://github.com/matteoise/omnigraph/actions/workflows/ci.yml/badge.svg)](https://github.com/matteoise/omnigraph/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## What it does
 
-`omnigraph` crawls configurable roots on your computer (`~/Documents`, `~/Projects`, external drives), extracts content from every file type (text, Markdown, PDF, DOCX, XLSX, code, images, media), builds a SQLite knowledge graph, and provides hybrid search (BM25 keyword + local vector embeddings). A file watcher keeps everything up to date automatically. An MCP server exposes 6 tools so any coding agent (Claude Code, OpenCode, Codex) can query your entire machine.
+`omnigraph` crawls configurable roots on your computer (`~/Documents`, `~/Projects`, external drives), extracts content from every file type (text, Markdown, PDF, DOCX, PPTX, XLSX, code, IPYNB, EPUB, HTML, images, media), builds a SQLite knowledge graph, and provides hybrid search (BM25 keyword + local vector embeddings). A file watcher keeps everything up to date automatically. An MCP server exposes 6 tools so any coding agent (Claude Code, OpenCode, Codex) can query your entire machine.
+
+Includes a beautiful **Interactive D3.js Web Graph Viewer** with zoom/pan capabilities to explore your knowledge visually.
 
 **Everything stays local.** No cloud, no API keys, no telemetry.
 
@@ -26,7 +30,7 @@ python -m omnigraph search "invoice"
 # Stats
 python -m omnigraph stats
 
-# Web UI (D3 graph viewer)
+# Web UI (Interactive D3 graph viewer)
 python -m omnigraph serve --web --port 8765
 # → open http://localhost:8765
 ```
@@ -92,15 +96,15 @@ omnigraph/
 │   ├── cli.py           # typer CLI
 │   ├── config.py        # roots, ignores, blocked paths, embedding model
 │   ├── crawler/         # ignore-aware walker (pathspec + os.scandir)
-│   ├── extract/         # extractors per file type
-│   ├── graph/           # SQLite graph store + builder
+│   ├── extract/         # extractors per file type (including AST chunking)
+│   ├── graph/           # SQLite graph store + builder (with SIMILAR_TO edges)
 │   ├── embed/           # sentence-transformers engine
 │   ├── search/          # BM25 (FTS5) + vector (sqlite-vec) + hybrid reranker
 │   ├── watch/           # watchdog file watcher with debouncing
-│   ├── mcp_server/      # FastMCP server + 6 tools
-│   ├── web/             # FastAPI + D3.js graph viewer
+│   ├── mcp_server/      # FastMCP server + 6 tools (Pydantic validated)
+│   ├── web/             # FastAPI + D3.js interactive graph viewer
 │   └── integration/     # cbm-mcp optional integration
-├── tests/               # pytest (31 tests)
+├── tests/               # pytest
 └── scripts/benchmark.py # indexing speed + search latency
 ```
 
@@ -112,29 +116,33 @@ Crawler → Extractor → Graph Builder → Embedder → SQLite (FTS5 + sqlite-v
 
 ## Configuration
 
-Edit `~/.omnigraph/config` or set environment variables. Key options:
+Edit `~/.omnigraph/config.toml` or set environment variables. Key options:
 
-- **Roots:** `~/Documents`, `~/Projects` (configurable in `config.py`)
+- **Roots:** `~/Documents`, `~/Projects` (configurable in `config.toml` or `OMNIGRAPH_ROOTS`)
 - **Ignores:** `.omniignore` + `.gitignore` hierarchy + hardcoded patterns
 - **Blocked paths:** `/`, `/etc`, `/System`, `~/.ssh`, `~/.config` (never crawled)
 - **Embedding model:** `all-MiniLM-L6-v2` (90MB, cached after first run)
-- **DB path:** `~/.omnigraph/omnigraph.db`
+- **DB path:** `~/.omnigraph/omnigraph.db` (configurable via `OMNIGRAPH_DB_PATH`)
 
 ## Supported File Types
 
 | Type | Extensions | Method |
 |------|-----------|--------|
 | Text | `.txt`, `.md`, `.mdx`, `.rst`, `.org`, `.csv`, `.json`, `.yaml` | Direct read + frontmatter |
+| Web | `.html`, `.htm`, `.xhtml` | BeautifulSoup4 |
+| Book | `.epub` | EbookLib + BeautifulSoup4 |
 | PDF | `.pdf` | pypdf + pdfplumber fallback |
-| DOCX | `.docx` | python-docx |
-| XLSX | `.xlsx`, `.xls` | openpyxl |
-| Code | `.py`, `.js`, `.ts`, `.java`, `.go`, `.rs`, `.c`, `.cpp`, ... | Text chunking + pygments language detection |
+| Word | `.docx` | python-docx |
+| PPTX | `.pptx`, `.ppt` | python-pptx |
+| Excel | `.xlsx`, `.xls` | openpyxl |
+| Code | `.py`, `.js`, `.ts`, `.java`, `.go`, `.rs`, `.c`, `.cpp`, ... | AST Chunking (Python) + Text chunking + pygments |
+| Notebook | `.ipynb` | nbformat |
 | Image | `.jpg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.webp` | EXIF via Pillow |
 | Media | `.mp3`, `.mp4`, `.m4a`, `.flac`, `.ogg`, `.wav`, `.mov` | ID3 metadata via mutagen |
 
 ## Privacy & Security
 
-- Everything local. No cloud calls, no API keys, no telemetry.
+- Runs 100% locally and offline. No cloud calls, no API keys, no telemetry.
 - Crawler **refuses** to crawl system paths (`/`, `/etc`, `/System`, `~/.ssh`, `~/.config`).
 - No `os.system` or `subprocess` with unsanitized input.
 - Only HuggingFace model download + PyPI installs (both official).
@@ -150,11 +158,17 @@ Sample output:
 ```
 === Indexing ===
   files: 3
-  index_time_s: 0.05
-  files_per_sec: 60.0
+  crawl_time_s: 0.003
+  index_time_s: 0.572
+  total_time_s: 0.574
+  files_per_sec: 5.2
+  db_nodes: 6
+  db_edges: 7
 
 === Search ===
-  'invoice': 1 hits in 0.3ms
+  'test': 3 hits in 0.14ms
+  'sample': 3 hits in 0.04ms
+  'hello': 2 hits in 0.03ms
 ```
 
 ## Related
