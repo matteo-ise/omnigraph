@@ -46,6 +46,6 @@
 - **Notes:** Graceful degradation, merge results, 2 tests
 
 ## Phase 9: Polish & Github-Readiness
-- **Status:** in_progress
-- **Commit:** pending
+- **Status:** completed
+- **Commit:** 3f41c2b
 - **Notes:** README, LICENSE, CONTRIBUTING, ROADMAP, CI, benchmark script

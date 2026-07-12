@@ -23,8 +23,12 @@ class KeywordSearch:
                USING fts5(path, title, text, tokenize='porter')"""
         )
 
+    def _get_rowid(self, file_id: str) -> int:
+        import hashlib
+        return int(hashlib.md5(file_id.encode()).hexdigest()[:8], 16) & 0x7FFFFFFF
+
     def index(self, file_id: str, path: str, title: str, text: str):
-        rowid = hash(file_id) & 0x7FFFFFFF
+        rowid = self._get_rowid(file_id)
         self.conn.execute("DELETE FROM files_fts WHERE rowid=?", (rowid,))
         self.conn.execute(
             "INSERT INTO files_fts(rowid, path, title, text) VALUES (?, ?, ?, ?)",
@@ -47,5 +51,5 @@ class KeywordSearch:
         ]
 
     def delete(self, file_id: str):
-        rowid = hash(file_id) & 0x7FFFFFFF
+        rowid = self._get_rowid(file_id)
         self.conn.execute("DELETE FROM files_fts WHERE rowid=?", (rowid,))

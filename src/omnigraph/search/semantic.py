@@ -28,10 +28,10 @@ class SemanticSearch:
         )
 
     def index(self, file_id: str, embedding: bytes):
+        self.conn.execute("DELETE FROM files_vec WHERE file_id=?", (file_id,))
         self.conn.execute(
             """INSERT INTO files_vec(file_id, embedding)
-               VALUES (?, ?)
-               ON CONFLICT(file_id) DO UPDATE SET embedding=excluded.embedding""",
+               VALUES (?, ?)""",
             (file_id, embedding),
         )
 
@@ -47,4 +47,6 @@ class SemanticSearch:
         return [VectorResult(file_id=r["file_id"], score=1.0 - r["distance"]) for r in rows]
 
     def delete(self, file_id: str):
-        self.conn.execute("DELETE FROM files_vec WHERE file_id=?", (file_id,))
+        # We index chunks as file_id:chunk0
+        self.conn.execute("DELETE FROM files_vec WHERE file_id LIKE ? || ':%'", (file_id,))
+        self.conn.execute("DELETE FROM files_vec WHERE file_id = ?", (file_id,))

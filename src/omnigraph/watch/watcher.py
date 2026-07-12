@@ -12,6 +12,8 @@ from omnigraph.extract import extract_file
 from omnigraph.graph.builder import GraphBuilder
 from omnigraph.graph.store import GraphStore
 from omnigraph.search.keyword import KeywordSearch
+from omnigraph.embed.engine import Embedder
+from omnigraph.search.semantic import SemanticSearch
 
 
 class DebouncedHandler(FileSystemEventHandler):
@@ -19,12 +21,12 @@ class DebouncedHandler(FileSystemEventHandler):
         self,
         store: GraphStore,
         builder: GraphBuilder,
-        root: Path,
+        roots: list[Path],
         debounce_seconds: float = 1.0,
     ):
         self.store = store
         self.builder = builder
-        self.root = root
+        self.roots = roots
         self.debounce_seconds = debounce_seconds
         self._pending: dict[str, float] = {}
         self._lock = threading.Lock()
@@ -77,13 +79,25 @@ class DebouncedHandler(FileSystemEventHandler):
                 ext=path.suffix.lower(),
             )
             content = extract_file(path)
-            self.builder.build_from_file(entry, content, self.root)
+            # Find which root it belongs to
+            root_path = next((r for r in self.roots if path.is_relative_to(r)), self.roots[0])
+            self.builder.build_from_file(entry, content, root_path)
 
             if content:
                 kw = KeywordSearch(self.store.conn)
+                embedder = Embedder()
+                semantic = SemanticSearch(self.store.conn, dimension=embedder.dimension)
+                
                 title = content.metadata.get("title", path.name)
                 file_id = f"file:{path.name}"
                 kw.index(file_id, str(path), title, content.text)
+
+                semantic.delete(file_id)
+                chunks = embedder.chunk_text(content.text)
+                if chunks:
+                    embeddings = embedder.encode(chunks)
+                    for i, emb in enumerate(embeddings):
+                        semantic.index(f"{file_id}:chunk{i}", emb)
 
             self.store.commit()
         except Exception:
@@ -93,7 +107,13 @@ class DebouncedHandler(FileSystemEventHandler):
         path = Path(path_str)
         self.store.delete_file(path)
         kw = KeywordSearch(self.store.conn)
-        kw.delete(f"file:{path.name}")
+        file_id = f"file:{path.name}"
+        kw.delete(file_id)
+        
+        embedder = Embedder()
+        semantic = SemanticSearch(self.store.conn, dimension=embedder.dimension)
+        semantic.delete(file_id)
+        
         self.store.commit()
 
 
@@ -101,17 +121,18 @@ class FileWatcher:
     def __init__(
         self,
         store: GraphStore,
-        root: Path,
+        roots: list[Path] | Path,
         debounce_seconds: float = 1.0,
     ):
         self.store = store
-        self.root = root
+        self.roots = roots if isinstance(roots, list) else [roots]
         self.builder = GraphBuilder(store)
-        self.handler = DebouncedHandler(store, self.builder, root, debounce_seconds)
+        self.handler = DebouncedHandler(store, self.builder, self.roots, debounce_seconds)
         self.observer = Observer()
 
     def start(self):
-        self.observer.schedule(self.handler, str(self.root), recursive=True)
+        for root in self.roots:
+            self.observer.schedule(self.handler, str(root), recursive=True)
         self.observer.start()
 
     def stop(self):
@@ -119,9 +140,20 @@ class FileWatcher:
         self.observer.join()
 
     def run(self):
+        import signal
+        self._running = True
+
+        def handle_sigint(sig, frame):
+            self._running = False
+
+        signal.signal(signal.SIGINT, handle_sigint)
+        signal.signal(signal.SIGTERM, handle_sigint)
+
         self.start()
         try:
-            while True:
+            while self._running:
                 time.sleep(1)
         except KeyboardInterrupt:
+            pass
+        finally:
             self.stop()

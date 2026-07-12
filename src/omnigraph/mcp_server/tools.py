@@ -149,6 +149,11 @@ def reindex(root: str | None = None) -> dict:
         builder = GraphBuilder(store)
         kw = KeywordSearch(store.conn)
 
+        from omnigraph.embed.engine import Embedder
+        from omnigraph.search.semantic import SemanticSearch
+        embedder = Embedder()
+        semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
+
         for r in roots_to_index:
             r = r.resolve()
             entries = walk(r)
@@ -159,6 +164,14 @@ def reindex(root: str | None = None) -> dict:
                     title = content.metadata.get("title", entry.path.name)
                     file_id = f"file:{entry.path.name}"
                     kw.index(file_id, str(entry.path), title, content.text)
+                    
+                    semantic.delete(file_id)
+                    chunks = embedder.chunk_text(content.text)
+                    if chunks:
+                        embeddings = embedder.encode(chunks)
+                        for i, emb in enumerate(embeddings):
+                            semantic.index(f"{file_id}:chunk{i}", emb)
+
                 total_indexed += 1
 
         store.commit()

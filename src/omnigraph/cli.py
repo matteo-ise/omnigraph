@@ -55,30 +55,50 @@ def crawl(
             from pathlib import Path
 
             entries = walk(Path(r))
+            count = 0
             for e in entries:
                 print(f"[cyan]{e.path}[/] ({e.size} bytes)")
-            print(f"\n[bold]{len(entries)}[/] files found.")
+                count += 1
+            print(f"\n[bold]{count}[/] files found.")
         return
 
     config.ensure_db_dir()
     with GraphStore(config.db_path) as store:
         builder = GraphBuilder(store)
         kw = KeywordSearch(store.conn)
+        from omnigraph.embed.engine import Embedder
+        from omnigraph.search.semantic import SemanticSearch
+        embedder = Embedder()
+        semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
 
         total = 0
-        for r in roots:
-            from pathlib import Path
+        from rich.progress import Progress
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Crawling...", total=None)
+            for r in roots:
+                from pathlib import Path
 
-            root_path = Path(r)
-            entries = walk(root_path)
-            for entry in entries:
-                content = extract_file(entry.path)
-                builder.build_from_file(entry, content, root_path)
-                if content:
-                    title = content.metadata.get("title", entry.path.name)
-                    file_id = f"file:{entry.path.name}"
-                    kw.index(file_id, str(entry.path), title, content.text)
-                total += 1
+                root_path = Path(r)
+                entries = walk(root_path)
+                for entry in entries:
+                    content = extract_file(entry.path)
+                    builder.build_from_file(entry, content, root_path)
+                    if content:
+                        title = content.metadata.get("title", entry.path.name)
+                        file_id = f"file:{entry.path.name}"
+                        kw.index(file_id, str(entry.path), title, content.text)
+                        
+                        semantic.delete(file_id)
+                        chunks = embedder.chunk_text(content.text)
+                        if chunks:
+                            embeddings = embedder.encode(chunks)
+                            for i, emb in enumerate(embeddings):
+                                semantic.index(f"{file_id}:chunk{i}", emb)
+                    
+                    total += 1
+                    progress.update(task, advance=1)
+                    if total % 1000 == 0:
+                        store.commit()
         store.commit()
         print(f"[bold green]Indexed {total} files.[/]")
 
@@ -216,6 +236,10 @@ def reindex(
     with GraphStore(config.db_path) as store:
         builder = GraphBuilder(store)
         kw = KeywordSearch(store.conn)
+        from omnigraph.embed.engine import Embedder
+        from omnigraph.search.semantic import SemanticSearch
+        embedder = Embedder()
+        semantic = SemanticSearch(store.conn, dimension=embedder.dimension)
 
         for r in roots:
             entries = walk(r)
@@ -226,7 +250,17 @@ def reindex(
                     title = content.metadata.get("title", entry.path.name)
                     file_id = f"file:{entry.path.name}"
                     kw.index(file_id, str(entry.path), title, content.text)
+
+                    semantic.delete(file_id)
+                    chunks = embedder.chunk_text(content.text)
+                    if chunks:
+                        embeddings = embedder.encode(chunks)
+                        for i, emb in enumerate(embeddings):
+                            semantic.index(f"{file_id}:chunk{i}", emb)
+
                 total += 1
+                if total % 1000 == 0:
+                    store.commit()
 
         store.commit()
         print(f"[bold green]Reindexed {total} files.[/]")

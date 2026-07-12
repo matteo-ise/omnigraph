@@ -20,7 +20,7 @@ def walk(
     root: Path | str,
     max_depth: int | None = None,
     extra_ignores: list[str] | None = None,
-) -> list[FileEntry]:
+):
     root = Path(root).resolve()
     config = get_config()
     if max_depth is None:
@@ -34,9 +34,11 @@ def walk(
             raise ValueError(f"Refusing to crawl blocked path: {root}")
 
     ignores = IgnoreStack(root, extra_patterns=extra_ignores or config.ignore_patterns)
-    entries = []
-    _walk_recursive(root, root, ignores, max_depth, 0, entries)
-    return entries
+
+    def _generator():
+        yield from _walk_recursive(root, root, ignores, max_depth, 0)
+
+    return _generator()
 
 
 def _walk_recursive(
@@ -45,7 +47,6 @@ def _walk_recursive(
     ignores: IgnoreStack,
     max_depth: int,
     depth: int,
-    entries: list[FileEntry],
 ):
     if depth > max_depth:
         return
@@ -64,17 +65,15 @@ def _walk_recursive(
                     continue
 
                 if entry.is_dir(follow_symlinks=False):
-                    _walk_recursive(base, path, ignores, max_depth, depth + 1, entries)
+                    yield from _walk_recursive(base, path, ignores, max_depth, depth + 1)
                 elif entry.is_file(follow_symlinks=False):
                     try:
                         stat = entry.stat(follow_symlinks=False)
-                        entries.append(
-                            FileEntry(
-                                path=path,
-                                size=stat.st_size,
-                                mtime=stat.st_mtime,
-                                ext=path.suffix.lower(),
-                            )
+                        yield FileEntry(
+                            path=path,
+                            size=stat.st_size,
+                            mtime=stat.st_mtime,
+                            ext=path.suffix.lower(),
                         )
                     except OSError:
                         continue
