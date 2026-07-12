@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Projekt-spezifisch (niemals committen)
+~/.omnigraph/
+*.db
+*.sqlite
+*.sqlite3
+embeddings/
+models/
+*.bin
+*.lance
+tests/fixtures/bin/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
