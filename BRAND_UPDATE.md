@@ -1,90 +1,77 @@
-# BRAND UPDATE v2 — omnigraph
+# BRAND UPDATE v3 — omnigraph
 
-> ⚠️ **WICHTIG — Lies diese Datei sofort und befolge sie. Update vom ersten Brand-Update.**
+> ⚠️ **WICHTIG — Lies diese Datei sofort. Drittes und finales Brand-Update.**
 
-Diese Datei informiert dich über ein aktualisiertes verbindliches Brand-System. Wesentliche Änderungen seit dem letzten Update:
+ Wesentliche Änderung seit v2: **Granola.ai CI wurde integriert.** Die Synthese ist nun Granola × MacWhisper — Dark-Mode (MacWhisper-Pflicht) mit Granola's warmen Untertönen, Serif-Typografie, und Granola-Grün als Accent.
 
-1. **MacWhisper-Look 1:1** — Dark-Mode-only, reines Schwarz `#000000` als Basis, eine Accent-Farbe (`#007AFF` Apple System Blue)
-2. **Electron-First Stack** — Electron + React + TypeScript + Tailwind ist der Default (nicht Swift). Vibe-Coding-freundlich, KI-Codertools am schnellsten damit.
-3. **`matteoise-ui-kit` ist Pflicht** — alle Apps importieren das private UI-Kit als Git Submodule. Keine Custom-Komponenten bauen — nur das Kit nutzen.
-4. **Electron-Vibrancy ist Pflicht** — `titleBarStyle: 'hiddenInset'`, `vibrancy: 'under-window'`, `nativeTheme.themeSource = 'dark'`
+## Was sich geändert hat (v2 → v3)
+
+1. **Serif-Typografie Pflicht** — `Fraunces` (display) für Headlines, `Newsreader` (body) für Body-Text. Sans-Serif (SF Pro) nur noch für UI-Controls (Buttons, Tabs, Statusbar). Granola's definierendes CI-Merkmal.
+2. **Warm-Dark Palette** — kein pure `#000000` mehr, sondern `#14130F` (warm near-black mit oliv Unterton). Text ist warmes Pergament-Off-White `#F5F2E8` statt purem Weiß. Wie ein ledergebundenes Notizbuch in dimmen Bibliothek.
+3. **Granola-Grün als Accent** — `#19C332` ersetzt Apple System Blue `#007AFF`. Das ist die prominenteste Granola-CI-Übernahme.
+4. **Granola-Sekundärfarben** — Honig `#FEBC2E` (Warning), Coral `#FF736A` (Danger) statt Apple's kälteren Orange/Red.
+5. **Editorial-Modus** — neue `.mk-cream` und `.mk-editorial` Klassen für Notes/Transcript-Panels die sich wie Papier anfühlen.
+6. **Lighter Font-Weights** — 500 statt 700 für Headlines (Serif braucht weniger Weight für Impact).
 
 ## Was du tun musst
 
-1. **Lies sofort `../BRAND_SYSTEM.md` neu** — Abschnitte §4.2 (Farben), §4.4 (Material), §5.7 (Electron-First), §6 (Architektur), §7 (Repo-Struktur), §11 (Quality Gates) wurden aktualisiert.
-2. **Lies `../matteoise-ui-kit/README.md` und `../matteoise-ui-kit/docs/installation.md`** — das ist das UI-Kit das du nutzen musst.
+1. **Lies `../BRAND_SYSTEM.md` neu** — Sektionen §4.1 (Typografie), §4.2 (Farben) wurden komplett überarbeitet.
+2. **Lies `../matteoise-ui-kit/README.md` neu** + `../matteoise-ui-kit/tailwind.config.ts` + `../matteoise-ui-kit/src/styles/globals.css` — Palette und Fonts wurden geändert.
+3. **Falls du das UI-Kit noch nicht eingebunden hast** — führe Aufgabe A aus v2 aus (`git submodule add ../matteoise-ui-kit src/ui-kit`).
+4. **Falls du das UI-Kit schon eingebunden hast** — update das Submodule: `git submodule update --remote --merge`
 
 ## Deine Aufgaben
 
-### Aufgabe A — UI-Kit einbinden
+### Aufgabe A — Font-Integration
 
-Wenn deine App eine UI hat (Electron/Web/React), integriere `matteoise-ui-kit`:
+Falls deine App Electron/Web-UI hat:
+- `globals.css` importieren (lädt Fraunces + Newsreader via Google Fonts automatisch)
+- Headlines → `font-display` Klasse (Fraunces)
+- Body-Text/Notes/Transcripts → `font-serif` Klasse (Newsreader) ODER `.mk-editorial` Komponenten-Klasse
+- UI-Controls (Buttons, Tabs, Statusbar, Sidebar-Items) → `font-sans` (SF Pro bleibt für kompakte UI)
+- Input-Felder → `font-serif` (Granola-Editor-Feel)
 
-```bash
-# Im Repo-Root ausführen
-git submodule add ../matteoise-ui-kit src/ui-kit
-git submodule init && git submodule update
-```
+### Aufgabe B — Color-Migration
 
-In deiner `package.json`:
-```json
-{
-  "dependencies": {
-    "matteoise-ui-kit": "file:src/ui-kit"
-  }
-}
-```
+Falls du schon UI-Code mit Farben hast:
+- `bg-bg-base` ist jetzt `#14130F` (warm), nicht mehr `#000000`
+- `text-text-primary` ist jetzt `#F5F2E8` (warm parchment), nicht mehr `#FAFAFA`
+- `bg-accent` ist jetzt `#19C332` (Granola green), nicht mehr `#007AFF`
+- `focus:shadow-focus` ist jetzt green-tinted, nicht blue-tinted
+- Falls du hartkodierte Hex-Werte hast → ersetze durch Tailwind-Token
 
-In deiner App:
-```tsx
-import 'matteoise-ui-kit/src/styles/globals.css'
-import { AppShell, Button, Card, Sidebar, Toolbar, Modal, Toggle, Input, EmptyState, ProgressIndicator } from 'matteoise-ui-kit'
-```
+### Aufgabe C — Editorial-Akzente
 
-Falls deine App Python/CLI-only ist (omnigraph) — keine UI-Integration nötig, aber das Web-UI (falls geplant) MUSS das Kit nutzen.
+Für Content-Bereiche die sich wie ein Notizbuch/Editor anfühlen sollen (Meeting-Transcripts, Notes, Summaries, Übersetzungen):
+- Nutze `.mk-cream` für Cream-Paper-Hintergrund + `.text-ink` für Text → Granola-Editor-Feel
+- Oder `.mk-editorial` für serif-body auf dark background
 
-### Aufgabe B — Falls Electron, Setup anpassen
+### Aufgabe D — Brand-Alignment-Audit v3 in PROGRESS.md
 
-Falls deine App Electron nutzt (loomforge), stelle sicher dass `electron/main.ts` (od. deine Main-Datei) diese Optionen hat (Referenz: `../matteoise-ui-kit/electron/main.ts`):
-
-```ts
-nativeTheme.themeSource = 'dark'
-new BrowserWindow({
-  titleBarStyle: 'hiddenInset',
-  trafficLightPosition: { x: 12, y: 14 },
-  vibrancy: 'under-window',
-  visualEffectState: 'active',
-  backgroundColor: '#000000',
-  webPreferences: {
-    contextIsolation: true,
-    nodeIntegration: false,
-    spellcheck: false,
-  },
-})
-```
-
-### Aufgabe C — Dark-Mode-Only Audit
-
-Prüfe deine UI-Code (falls vorhanden):
-- [ ] Keine Light-Mode-Styles, kein Theme-Toggle
-- [ ] Hartkodierte Farben ersetzt durch Tailwind-Token aus `matteoise-ui-kit/tailwind.config.ts` (`bg-bg-base`, `text-text-primary`, `bg-accent`, etc.)
-- [ ] SF Pro Font Stack aktiv (`-apple-system, 'SF Pro Display', 'Inter', system-ui`)
-- [ ] 8pt Grid Spacing
-- [ ] Apple-Easing Animations
-
-### Aufgabe D — Brand-Alignment-Audit in PROGRESS.md
-
-Trage in `PROGRESS.md` unter einer neuen Sektion `## Brand-Alignment-Audit v2` ein:
-- Welche der Aufgaben A/B/C hast du ausgeführt?
+Trage unter `## Brand-Alignment-Audit v3` ein:
+- Welche Aufgaben A-C hast du ausgeführt?
+- Welche Fonts sind jetzt aktiv?
+- Wo werden Cream/Editorial-Modi genutzt?
 - Was fehlt (TODO)?
-- Welche Blockers (z.B. "Python-CLI-App hat keine UI, UI-Kit nicht anwendbar")?
+- Blockers?
 
 ## Kritische Regeln
 
-- **Breche NIE Funktionalität für Brand-Alignment.** Wenn eine Korrektur Tests/Build bricht → Self-Healing (3 Fix-Versuche), dann `blocked: brand-alignment-v2-conflict` in `PROGRESS.md` und weiter.
-- **Keine neuen externen Abhängigkeiten** außer `matteoise-ui-kit` und den in dessen `package.json` deklarierten Peer-Deps (electron, react, framer-motion, lucide-react).
-- **Keine Code-Logik-Änderungen** für Brand-Alignment außer UI-Styling. Falls Code-Refactor nötig → TODO in `PROGRESS.md` und weiter.
-- **`matteoise-ui-kit` ist privat** — nicht in öffentlichen Commits/Repos exponieren (als Submodule eingebunden ist OK, da es nur kompiliert in Builds landet).
+- **Breche NIE Funktionalität für Brand-Alignment.** Self-Healing, dann `blocked: brand-alignment-v3-conflict`.
+- **Keine neuen externen Abhängigkeiten** außer matteoise-ui-kit und dessen Peer-Deps.
+- **Granola-Grün `#19C332` ist die Accent-Farbe** — nicht Apple Blue, nicht eine eigene Wahl.
+- **Serif ist Pflicht für Content** — Body-Text in Sans-Serif ist ein Brand-Verstoß.
+- **Pure `#000000` ist verboten** — nutze `#14130F` (bg-bg-base).
+- **Pure `#FFFFFF` ist verboten** — nutze `#F5F2E8` (text-text-primary).
+- **matteoise-ui-kit ist privat** — nicht in öffentlichen Commits exponieren.
+
+## Skill-Hinweise
+
+- `liquid-glass-design` — falls macOS 26 Liquid Glass Features
+- `design-system` — für Visual-Konsistenz-Auditing
+- `coding-standards` — TypeScript/React-Konventionen
+- `verification-loop` — nach jeder Korrektur prüfen
+- `agentic-engineering` — generelle autonome Arbeitsmuster
 
 ## Repo-Übersicht (für Cross-Promotion-Footer)
 
@@ -94,13 +81,4 @@ Alle Matteo-Apps:
 - **loomforge** — `https://github.com/matteo-ise/loomforge` — Open-Source-Loom-Alternative
 - **omnilingo** — `https://github.com/matteo-ise/omnilingo` — Lokales DeepL + Grammarly
 
-Verwende diese Links im Cross-Promotion-Footer deiner README (außer dem eigenen Repo).
-
-## Skill-Hinweise
-
-- `liquid-glass-design` — falls macOS 26 Liquid Glass Features integrate
-- `coding-standards` — TypeScript/React-Konventionen
-- `verification-loop` — nach jeder Korrektur prüfen
-- `agentic-engineering` — generelle autonome Arbeitsmuster
-
-Los. Lies `../BRAND_SYSTEM.md` neu, lies `../matteoise-ui-kit/README.md`, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
+Los. Lies `../BRAND_SYSTEM.md` neu, update das UI-Kit-Submodule falls nötig, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
