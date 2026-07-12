@@ -1,48 +1,92 @@
-# BRAND UPDATE — omnigraph
+# BRAND UPDATE v2 — omnigraph
 
-> ⚠️ **WICHTIG — Lies diese Datei sofort und befolge sie.**
+> ⚠️ **WICHTIG — Lies diese Datei sofort und befolge sie. Update vom ersten Brand-Update.**
 
-Diese Datei informiert dich über ein neues verbindliches Brand-System für dieses Repo. Du musst deine weitere Arbeit an diesem Repo anpassen.
+Diese Datei informiert dich über ein aktualisiertes verbindliches Brand-System. Wesentliche Änderungen seit dem letzten Update:
 
-## Was passiert ist
+1. **MacWhisper-Look 1:1** — Dark-Mode-only, reines Schwarz `#000000` als Basis, eine Accent-Farbe (`#007AFF` Apple System Blue)
+2. **Electron-First Stack** — Electron + React + TypeScript + Tailwind ist der Default (nicht Swift). Vibe-Coding-freundlich, KI-Codertools am schnellsten damit.
+3. **`matteoise-ui-kit` ist Pflicht** — alle Apps importieren das private UI-Kit als Git Submodule. Keine Custom-Komponenten bauen — nur das Kit nutzen.
+4. **Electron-Vibrancy ist Pflicht** — `titleBarStyle: 'hiddenInset'`, `vibrancy: 'under-window'`, `nativeTheme.themeSource = 'dark'`
 
-Matteo hat ein zentrales Brand-System definiert, das für alle seine Open-Source-Projekte verbindlich ist. Dieses Repo muss dem folgen. Die Master-Datei liegt eine Ebene höher:
+## Was du tun musst
 
-**Lies sofort:** `../BRAND_SYSTEM.md`
+1. **Lies sofort `../BRAND_SYSTEM.md` neu** — Abschnitte §4.2 (Farben), §4.4 (Material), §5.7 (Electron-First), §6 (Architektur), §7 (Repo-Struktur), §11 (Quality Gates) wurden aktualisiert.
+2. **Lies `../matteoise-ui-kit/README.md` und `../matteoise-ui-kit/docs/installation.md`** — das ist das UI-Kit das du nutzen musst.
 
-Diese Datei definiert verbindlich:
-- §1 Identity & Mission
-- §2 Target Audience (Deutschsprachige End-User + Developer)
-- §3 Brand Voice & Tone (freundlich, kompetent, nicht enthusiastisch, Du-Form)
-- §4 Visual Design Language (Apple DNA: SF Pro, System Colors, 8pt Grid, NSVisualEffectView)
-- §5 UX Principles (Simplicity, Default Works, Privacy als Feature, German UI)
-- §6 App-Architecture Patterns (Menubar, Window, Sidecar)
-- §7 Repo-Struktur (verbindliche Files)
-- §8 README-Standard (Template)
-- §9 GitHub Repo Meta (Topics, Description, Avatar)
-- §10 Cross-Promotion (Footer mit Verweis auf andere Matteo-Apps)
-- §11 Quality Gates (vor jedem Release)
-- §12 Naming Conventions
-- §13 Was zu tun ist (genau dein Fall)
+## Deine Aufgaben
 
-## Deine Aufgabe
+### Aufgabe A — UI-Kit einbinden
 
-Führe §13 aus:
+Wenn deine App eine UI hat (Electron/Web/React), integriere `matteoise-ui-kit`:
 
-1. **Audit:** Lese dein aktuelles Repo gegen `BRAND_SYSTEM.md` §7, §8, §11. Liste alle Abweichungen in `PROGRESS.md` unter einer neuen Sektion `## Brand-Alignment-Audit`.
-2. **Korrektur-Plan:** Erstelle einen atomaren Korrektur-Plan in `PROGRESS.md`.
-3. **Ausführung:** Korrigiere Abweichungen, commite als `chore: align with brand system — <what>` (oder mehrere kleine Commits falls viel zu tun).
-4. **Verifikation:** Prüfe erneut gegen §11. Trage Ergebnisse in `PROGRESS.md` ein.
-5. **Weiterarbeit:** Fahre mit deiner nächsten Blueprint-Phase fort, aber befolge das Brand-System für alle weiteren Commits.
+```bash
+# Im Repo-Root ausführen
+git submodule add ../matteoise-ui-kit src/ui-kit
+git submodule init && git submodule update
+```
+
+In deiner `package.json`:
+```json
+{
+  "dependencies": {
+    "matteoise-ui-kit": "file:src/ui-kit"
+  }
+}
+```
+
+In deiner App:
+```tsx
+import 'matteoise-ui-kit/src/styles/globals.css'
+import { AppShell, Button, Card, Sidebar, Toolbar, Modal, Toggle, Input, EmptyState, ProgressIndicator } from 'matteoise-ui-kit'
+```
+
+Falls deine App Python/CLI-only ist (omnigraph) — keine UI-Integration nötig, aber das Web-UI (falls geplant) MUSS das Kit nutzen.
+
+### Aufgabe B — Falls Electron, Setup anpassen
+
+Falls deine App Electron nutzt (loomforge), stelle sicher dass `electron/main.ts` (od. deine Main-Datei) diese Optionen hat (Referenz: `../matteoise-ui-kit/electron/main.ts`):
+
+```ts
+nativeTheme.themeSource = 'dark'
+new BrowserWindow({
+  titleBarStyle: 'hiddenInset',
+  trafficLightPosition: { x: 12, y: 14 },
+  vibrancy: 'under-window',
+  visualEffectState: 'active',
+  backgroundColor: '#000000',
+  webPreferences: {
+    contextIsolation: true,
+    nodeIntegration: false,
+    spellcheck: false,
+  },
+})
+```
+
+### Aufgabe C — Dark-Mode-Only Audit
+
+Prüfe deine UI-Code (falls vorhanden):
+- [ ] Keine Light-Mode-Styles, kein Theme-Toggle
+- [ ] Hartkodierte Farben ersetzt durch Tailwind-Token aus `matteoise-ui-kit/tailwind.config.ts` (`bg-bg-base`, `text-text-primary`, `bg-accent`, etc.)
+- [ ] SF Pro Font Stack aktiv (`-apple-system, 'SF Pro Display', 'Inter', system-ui`)
+- [ ] 8pt Grid Spacing
+- [ ] Apple-Easing Animations
+
+### Aufgabe D — Brand-Alignment-Audit in PROGRESS.md
+
+Trage in `PROGRESS.md` unter einer neuen Sektion `## Brand-Alignment-Audit v2` ein:
+- Welche der Aufgaben A/B/C hast du ausgeführt?
+- Was fehlt (TODO)?
+- Welche Blockers (z.B. "Python-CLI-App hat keine UI, UI-Kit nicht anwendbar")?
 
 ## Kritische Regeln
 
-- **Breche NIE Funktionalität für Brand-Alignment.** Wenn eine Korrektur Tests/Build bricht → Self-Healing (3 Fix-Versuche), dann `blocked: brand-alignment-conflict` in `PROGRESS.md` und weiter.
-- **Keine Code-Logik-Änderungen** für Brand-Alignment. Nur Markdown, Config, YAML, CI-Files. Falls UI-Strings auf Deutsch übersetzt werden müssen oder Code-Änderungen nötig sind → TODO in `PROGRESS.md` markieren und weiter.
-- **Keine neuen externen Abhängigkeiten** für Brand-Alignment installieren.
-- **Brand-System befolgen** für alle Commits ab jetzt — nicht nur für die Korrektur-Commits.
+- **Breche NIE Funktionalität für Brand-Alignment.** Wenn eine Korrektur Tests/Build bricht → Self-Healing (3 Fix-Versuche), dann `blocked: brand-alignment-v2-conflict` in `PROGRESS.md` und weiter.
+- **Keine neuen externen Abhängigkeiten** außer `matteoise-ui-kit` und den in dessen `package.json` deklarierten Peer-Deps (electron, react, framer-motion, lucide-react).
+- **Keine Code-Logik-Änderungen** für Brand-Alignment außer UI-Styling. Falls Code-Refactor nötig → TODO in `PROGRESS.md` und weiter.
+- **`matteoise-ui-kit` ist privat** — nicht in öffentlichen Commits/Repos exponieren (als Submodule eingebunden ist OK, da es nur kompiliert in Builds landet).
 
-## Repo-übersicht (für Cross-Promotion-Footer)
+## Repo-Übersicht (für Cross-Promotion-Footer)
 
 Alle Matteo-Apps:
 - **voicemeet** — `https://github.com/matteo-ise/voicemeet` — Lokale Meeting-Notizen mit KI
@@ -52,29 +96,11 @@ Alle Matteo-Apps:
 
 Verwende diese Links im Cross-Promotion-Footer deiner README (außer dem eigenen Repo).
 
-## Quick-Check — Was wahrscheinlich fehlt
+## Skill-Hinweise
 
-Gegen `BRAND_SYSTEM.md` §7 prüfen:
+- `liquid-glass-design` — falls macOS 26 Liquid Glass Features integrate
+- `coding-standards` — TypeScript/React-Konventionen
+- `verification-loop` — nach jeder Korrektur prüfen
+- `agentic-engineering` — generelle autonome Arbeitsmuster
 
-- [ ] README.md hat Hero-Screenshot-Sektion (oder Placeholder mit `![Hero-Screenshot](docs/screenshots/hero.png)`)
-- [ ] README.md hat Privacy-Sektion ("Läuft vollständig lokal. Keine Daten verlassen dein Gerät. Keine Cloud. Keine Telemetrie.")
-- [ ] README.md hat Vergleichstabelle (gegen max. 3 Konkurrenten)
-- [ ] README.md hat Cross-Promotion-Footer (siehe oben)
-- [ ] README.md hat "Installation für Nicht-Developer" VOR "Build aus Source"
-- [ ] CONTRIBUTING.md existiert (kurz, freundlich, auf Deutsch)
-- [ ] ROADMAP.md existiert (v1.1, v1.2, v2.0)
-- [ ] CHANGELOG.md existiert (Keep a Changelog Format)
-- [ ] ATTRIBUTION.md existiert (Fork-Vermerke, genutzte Libs + Lizenzen)
-- [ ] CODE_OF_CONDUCT.md existiert (Contributor Covenant 2.1)
-- [ ] .github/ISSUE_TEMPLATE/bug-report.md + feature-request.md existieren
-- [ ] .github/workflows/ci.yml existiert und läuft
-- [ ] .github/PULL_REQUEST_TEMPLATE.md existiert
-- [ ] docs/architecture.md existiert (Diagramm + Erklärung)
-- [ ] docs/screenshots/ Ordner existiert (Placeholder ok falls App noch nicht fertig)
-- [ ] LICENSE ist MIT
-- [ ] Keine Emojis in README-Headlines
-- [ ] Keine Badge-Suppe oben (max. 3: License, macOS-Version, Build-Status)
-
-Fehlendes → erstellen, Abweichendes → korrigieren, alles als `chore: align with brand system` Commits.
-
-Los. Lies `../BRAND_SYSTEM.md`, führe den Audit aus, korrigiere, commite, trage in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
+Los. Lies `../BRAND_SYSTEM.md` neu, lies `../matteoise-ui-kit/README.md`, führe Aufgaben A-D aus, trage Ergebnisse in `PROGRESS.md` ein, fahre dann mit deiner Blueprint-Phase fort.
