@@ -15,15 +15,25 @@ def search(query: str, k: int = 10, mode: str = "hybrid") -> list[dict]:
     config = get_config()
     with GraphStore(config.db_path) as store:
         results = hybrid_search(store.conn, query, k=k, mode=mode)
-        return [
+        omnigraph_results = [
             {
                 "file_id": r.file_id,
                 "path": r.path,
                 "score": r.score,
                 "snippet": r.snippet,
+                "provider": "omnigraph",
             }
             for r in results
         ]
+
+    # Merge codebase-memory-mcp results if configured and available
+    from omnigraph.integration import cbm_search, is_cbm_available, merge_results
+
+    if is_cbm_available():
+        cbm_results = cbm_search(query, k)
+        return merge_results(omnigraph_results, cbm_results)
+
+    return omnigraph_results
 
 
 def get_file(path: str) -> dict:
