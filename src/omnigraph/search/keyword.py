@@ -24,9 +24,11 @@ class KeywordSearch:
         )
 
     def index(self, file_id: str, path: str, title: str, text: str):
+        rowid = hash(file_id) & 0x7FFFFFFF
+        self.conn.execute("DELETE FROM files_fts WHERE rowid=?", (rowid,))
         self.conn.execute(
             "INSERT INTO files_fts(rowid, path, title, text) VALUES (?, ?, ?, ?)",
-            (hash(file_id) & 0x7FFFFFFF, path, title, text),
+            (rowid, path, title, text),
         )
 
     def search(self, query: str, k: int = 10) -> list[SearchResult]:
