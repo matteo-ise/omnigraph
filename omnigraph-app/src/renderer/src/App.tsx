@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, FileText, Folder, Hash, Image as ImageIcon, Video, Code, LayoutGrid } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Settings from './Settings'
 
 // Define the shape of search results based on the FastAPI backend
 interface SearchResult {
@@ -12,22 +13,23 @@ interface SearchResult {
   metadata: any
 }
 
-function App(): JSX.Element {
+function App() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [showSettings, setShowSettings] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // Focus input on mount and when window gets focus
-    inputRef.current?.focus()
-    window.addEventListener('focus', () => inputRef.current?.focus())
-    return () => window.removeEventListener('focus', () => inputRef.current?.focus())
-  }, [])
+    if (!showSettings) {
+      inputRef.current?.focus()
+    }
+  }, [showSettings])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showSettings) return
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setSelectedIndex(prev => (prev < results.length - 1 ? prev + 1 : prev))
@@ -43,7 +45,7 @@ function App(): JSX.Element {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [results, selectedIndex])
+  }, [results, selectedIndex, showSettings])
 
   useEffect(() => {
     if (!query.trim()) {
@@ -53,7 +55,7 @@ function App(): JSX.Element {
 
     const timer = setTimeout(() => {
       performSearch(query)
-    }, 150) // debounce
+    }, 150)
 
     return () => clearTimeout(timer)
   }, [query])
@@ -61,7 +63,6 @@ function App(): JSX.Element {
   const performSearch = async (q: string) => {
     setLoading(true)
     try {
-      // Calls the Python backend running locally
       const res = await fetch(`http://localhost:8765/api/search?q=${encodeURIComponent(q)}&limit=10`)
       if (res.ok) {
         const data = await res.json()
@@ -76,7 +77,6 @@ function App(): JSX.Element {
   }
 
   const openFile = (path: string) => {
-    // In a real app, send IPC to main process to shell.openPath(path)
     console.log("Opening file:", path)
   }
 
@@ -92,7 +92,11 @@ function App(): JSX.Element {
   }
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-black/40 backdrop-blur-2xl overflow-hidden rounded-xl border border-white/10 shadow-2xl draggable text-white">
+    <div className="w-screen h-screen flex flex-col bg-black/40 backdrop-blur-2xl overflow-hidden rounded-xl border border-white/10 shadow-2xl draggable text-white relative">
+      <AnimatePresence>
+        {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      </AnimatePresence>
+
       {/* Search Bar Area */}
       <div className="flex items-center px-4 py-4 border-b border-white/10 non-draggable">
         <Search className="w-6 h-6 text-white/50 mr-3" />
@@ -106,8 +110,24 @@ function App(): JSX.Element {
           autoFocus
         />
         {loading && (
-          <div className="w-5 h-5 border-2 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+          <div className="w-5 h-5 border-2 border-white/20 border-t-white/80 rounded-full animate-spin mr-3"></div>
         )}
+        <div className="flex items-center space-x-2 non-draggable">
+          <button 
+            onClick={() => (window as any).api.openGraphWindow()}
+            className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition"
+            title="Open Full Graph"
+          >
+            <Hash className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition"
+            title="Settings"
+          >
+            <Folder className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Results Area */}

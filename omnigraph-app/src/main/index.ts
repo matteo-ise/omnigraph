@@ -45,11 +45,17 @@ function createWindow(): void {
 }
 
 function startPythonBackend() {
-  // Start the Python backend using the omnigraph module
-  // Assumes the Python environment where omnigraph is installed is in PATH
-  pythonProcess = spawn('python', ['-m', 'omnigraph', 'serve', '--port', '8765'], {
-    stdio: 'ignore' // We don't need its output for now
-  })
+  if (app.isPackaged) {
+    const backendPath = join(process.resourcesPath, 'backend', 'omnigraph-backend')
+    pythonProcess = spawn(backendPath, ['serve', '--port', '8765'], {
+      stdio: 'ignore'
+    })
+  } else {
+    // Development mode
+    pythonProcess = spawn('python', ['-m', 'omnigraph', 'serve', '--port', '8765'], {
+      stdio: 'ignore'
+    })
+  }
 }
 
 function stopPythonBackend() {
@@ -104,6 +110,28 @@ app.whenReady().then(() => {
   startPythonBackend()
   createTray()
   createWindow()
+
+  // IPC listener for Graph Window
+  ipcMain.on('open-graph-window', () => {
+    const graphWindow = new BrowserWindow({
+      width: 1024,
+      height: 768,
+      title: 'Omnigraph Explorer',
+      ...(process.platform === 'linux' ? { icon } : {})
+    })
+    
+    // In a real Mac app we might want to show the dock icon if a real window is open
+    if (app.dock) app.dock.show()
+      
+    graphWindow.loadURL('http://localhost:8765/')
+    
+    graphWindow.on('closed', () => {
+      // Hide dock again if no other windows are visible
+      if (app.dock && BrowserWindow.getAllWindows().length <= 1) {
+        app.dock.hide()
+      }
+    })
+  })
 
   // Register a global shortcut listener
   globalShortcut.register('CommandOrControl+Shift+O', toggleWindow)
